@@ -1,3 +1,5 @@
+📱 **下载 App**：[点此下载最新版 APK](https://github.com/MotoGuide/Solo-Guide/releases/latest)
+
 声明：本软件仅供个人学习研究使用，请勿四处传播或分享他人，因使用过程中出现的任何法律问题与作者无关。
 
 1、设备开关机
