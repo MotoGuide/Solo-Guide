@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "local_tencent_verify",
+  "name": "腾讯（本地验证）",
+  "provider": "tencent",
+  "priority": 100,
+  "match": {
+    "anyOf": ["map.wap.qq.com", "reportPeace", "map.qq.com"]
+  },
+  "extract": {
+    "shareid": ["{{query.shareid}}", "{{query.share_id}}"]
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "url": "https://syn0.map.qq.com/peace?qt=get_location&shareid={{shareid}}&routeid=-1"
+    }
+  ],
+  "routes": [
+    {
+      "coordSystem": "gcj02",
+      "points": {
+        "op": "decodePoints",
+        "path": "$.route.gpses",
+        "sep": ";",
+        "fieldSep": ",",
+        "order": "lnglat"
+      },
+      "totalDistance": "$.route.distance",
+      "totalTime": "$.route.eta",
+      "routeId": "$.route.routeid"
+    }
+  ],
+  "realtime": {
+    "requests": [
+      {
+        "method": "GET",
+        "url": "https://syn0.map.qq.com/peace?qt=get_location&shareid={{shareid}}&routeid={{routeId}}"
+      }
+    ],
+    "mapping": {
+      "routeId": "$.route.routeid",
+      "currentLat": "$.location.latitude",
+      "currentLng": "$.location.longitude",
+      "remainDistance": "$.route.distance",
+      "remainTime": "$.route.eta",
+      "navEnded": "$.end.navend"
+    },
+    "pollIntervalMs": 60000
+  }
+}

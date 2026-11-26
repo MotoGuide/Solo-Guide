@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "local_baidu_verify",
+  "name": "百度（本地验证）",
+  "provider": "baidu",
+  "priority": 100,
+  "match": {
+    "anyOf": ["newclient.map.baidu.com", "tangram/tuanyuan", "map.baidu.com"]
+  },
+  "extract": {
+    "share_id": ["{{query.share}}"],
+    "cuid": {
+      "expr": "{{query.cuid}}",
+      "replace": ["-", "|"]
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "url": "https://appnavi.baidu.com/mop/tuanyuan/refreshnavidata?cuid={{cuid}}&share_id={{share_id}}&last_route_md5=&firstopenflag=1"
+    }
+  ],
+  "routes": [
+    {
+      "root": "$.data",
+      "coordSystem": "bd09",
+      "points": {
+        "op": "decodePoints",
+        "path": "$.linkinfo",
+        "sep": ";",
+        "fieldSep": ",",
+        "order": "lnglat",
+        "skipFirst": true
+      },
+      "totalDistance": "$root.remain_dis",
+      "totalTime": "$root.remain_time",
+      "routeId": "$root.route_id"
+    }
+  ],
+  "realtime": {
+    "requests": [
+      {
+        "method": "GET",
+        "url": "https://appnavi.baidu.com/mop/tuanyuan/refreshnavidata?cuid={{cuid}}&share_id={{share_id}}&last_route_md5={{md5}}&firstopenflag=0",
+        "respVars": {
+          "md5": "$.data.last_route_md5"
+        }
+      }
+    ],
+    "mapping": {
+      "routeId": "$.data.route_id",
+      "currentPoint": "$.data.poi[0]",
+      "currentPointOrder": "lnglat",
+      "remainDistance": "$.data.remain_dis",
+      "remainTime": "$.data.remain_time",
+      "linkStatus": "$.data.linkstatus",
+      "_linkStatus说明": "真实响应中该字段是字符串形式的 JSON 数组（非真数组），现有实现同样不解析 —— 行为一致；navEnded 实际由 remain_dis==0 判定"
+    },
+    "pollIntervalMs": 15000
+  }
+}

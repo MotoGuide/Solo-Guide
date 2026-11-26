@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "id": "local_amap_verify",
+  "name": "高德（本地验证）",
+  "priority": 100,
+  "match": {
+    "anyOf": ["surl.amap.com", "static3.amap.com", "static5.gaode.com", "amap.com", "gaode.com", "urlParameter"],
+    "expandShortLink": true
+  },
+  "extract": {
+    "urlParameter": [
+      "{{query.urlParameter}}",
+      "{{query.schema.query.urlParameter}}"
+    ]
+  },
+  "requests": [
+    {
+      "method": "POST",
+      "url": "https://m5.amap.com/ws/share/lbs/route/restoration",
+      "contentType": "form",
+      "body": "param={{urlParameter}}",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36"
+      },
+      "okPath": "$.code",
+      "okEquals": 1
+    }
+  ],
+  "routes": [
+    {
+      "root": "$.data.restorationInfo",
+      "coordSystem": "gcj02",
+      "naviType": "$.data.naviType",
+      "naviTypeFallback": 2,
+      "segmentsFrom": "$.plan_info.paths[*].segs[*]",
+      "pointsIn": "$.links[*].linkCoors[*]",
+      "pointLat": "lat",
+      "pointLng": "lon",
+      "action": "$.mainAction",
+      "assistAction": "$.assistAction",
+      "distance": { "op": "sum", "path": "$.links[*].linkLeng" },
+      "roadName": {
+        "op": "sliceString",
+        "table": "$root.plan_info.name_table",
+        "start": "$.links[0].name_index.start_index",
+        "len": "$.links[0].name_index.len",
+        "decode": "base64",
+        "unit": "byte"
+      },
+      "totalDistance": { "op": "sum", "path": "$root.plan_info.paths[*].length" },
+      "totalTime": { "op": "sum", "path": "$root.plan_info.paths[*].travelTime" },
+      "routeId": "$.data.routeId"
+    },
+    {
+      "root": "$.data.restorationInfo",
+      "coordSystem": "gcj02",
+      "naviType": "$.data.naviType",
+      "naviTypeFallback": 2,
+      "segmentsFrom": "$.route.paths[*].segments[*]",
+      "points": "$.route.paths[*].coords[*]",
+      "pointLat": "lat",
+      "pointLng": "lon",
+      "beginIndex": "$.links[0].begin_index",
+      "endIndex": "$.links[-1].end_index",
+      "action": "$.main_action",
+      "assistAction": "$.assist_action",
+      "distance": { "op": "sum", "path": "$.links[*].length" },
+      "roadName": {
+        "op": "lookup",
+        "key": "$.links[*].road_name_index",
+        "table": "$root.route.roads_names",
+        "field": "road_name",
+        "mode": "last"
+      },
+      "totalDistance": { "op": "sum", "path": "$root.route.paths[*].distance" },
+      "totalTime": { "op": "sum", "path": "$root.route.paths[*].travel_time" },
+      "routeId": "$.data.routeId"
+    }
+  ],
+  "realtime": {
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://m5.amap.com/ws/share/lbs/info",
+        "contentType": "form",
+        "body": "param={{urlParameter}}",
+        "headers": {
+          "User-Agent": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36"
+        }
+      }
+    ],
+    "mapping": {
+      "routeId": "$.data.shareMembers[0].driveInfo.naviId",
+      "currentLat": "$.data.shareMembers[0].locInfo.lat",
+      "currentLng": "$.data.shareMembers[0].locInfo.lon",
+      "remainDistance": "$.data.shareMembers[0].driveInfo.etaDistance",
+      "remainTime": "$.data.shareMembers[0].driveInfo.etaTime",
+      "navEnded": "$.data.shareInfo.shareEndTime"
+    },
+    "pollIntervalMs": 8000
+  }
+}
